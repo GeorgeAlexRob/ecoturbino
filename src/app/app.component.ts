@@ -142,6 +142,7 @@ export class AppComponent implements OnInit {
       // Can always only be one of those at a time, according to 'heatingMeans'
       gasPrice: 5.796, // c/kWh  // TODO: Make price dynamic according to heatingMeans
       electricityPrice: 1,
+      price: 0,
       // ---------------------------------
       wasteWaterPrice: 2.11, // €/m³
       additionalCosts: 0, // €/m³

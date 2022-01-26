@@ -12,8 +12,8 @@
       <p class="hint">({{ getPriceHint() }})</p>
     </div>
 
-    <div class="form-fields-container">
-      <div class="start-situation form" formGroupName="startSituation">
+    <div class="main-forms">
+      <div class="form-container" formGroupName="startSituation">
         <h2>Ausgangssituation</h2>
         <p class="hint">Bitte das Formular vollständig ausfüllen</p>
 
@@ -21,8 +21,8 @@
           <mat-label>Anzahl Duschen</mat-label>
           <input formControlName="showers" matInput type="number" />
           <!-- <button *ngIf="value" matSuffix mat-icon-button aria-label="Clear" (click)="value=''">
-          <mat-icon>close</mat-icon>
-        </button> -->
+            <mat-icon>close</mat-icon>
+          </button> -->
         </mat-form-field>
         <mat-form-field>
           <mat-label>Auslastung</mat-label>
@@ -50,7 +50,7 @@
         </mat-form-field>
       </div>
 
-      <div class="costs-form" formGroupName="costs">
+      <div class="form-container" formGroupName="costs">
         <h2>Kosten</h2>
 
         <mat-form-field>
@@ -88,29 +88,34 @@
     <!-- TODO: Change order on smaller screensizes, so the optional form-field and the buttons are always last -->
     <div class="optional-form-container" formGroupName="optional">
       <h2>Optionale Angaben</h2>
-      <mat-form-field class="project-name-input">
-        <mat-label>Projektname</mat-label>
-        <input formControlName="projectName" matInput />
-      </mat-form-field>
-      <mat-form-field class="email-input">
-        <mat-label>E-Mail-Adresse</mat-label>
-        <input
-          type="email"
-          matInput
-          formControlName="email"
-          placeholder="max@example.com"
-        />
-        <mat-error *ngIf="email?.invalid && email?.touched">
-          Bitte geben Sie eine gültige E-Mail Adresse ein
-        </mat-error>
-      </mat-form-field>
 
-      <button mat-raised-button color="primary" type="submit">
-        PDF Download
-      </button>
-      <button mat-raised-button color="primary" type="submit">
-        PDF-Versand per Mail
-      </button>
+      <div class="optional-form">
+        <mat-form-field class="project-name-input">
+          <mat-label>Projektname</mat-label>
+          <input formControlName="projectName" matInput />
+        </mat-form-field>
+        <mat-form-field class="email-input">
+          <mat-label>E-Mail-Adresse</mat-label>
+          <input
+            type="email"
+            matInput
+            formControlName="email"
+            placeholder="max@example.com"
+          />
+          <mat-error *ngIf="email?.invalid && email?.touched">
+            Bitte geben Sie eine gültige E-Mail Adresse ein
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="button-group">
+        <button mat-raised-button color="primary" type="submit">
+          PDF Download
+        </button>
+        <button mat-raised-button color="primary" type="submit">
+          PDF-Versand per Mail
+        </button>
+      </div>
     </div>
   </form>
 
