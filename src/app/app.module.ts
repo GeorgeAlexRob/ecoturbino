@@ -15,9 +15,14 @@ import {
   MatRadioModule,
   MAT_RADIO_DEFAULT_OPTIONS,
 } from '@angular/material/radio';
-import {MatButtonModule} from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatStepperModule } from '@angular/material/stepper';
+import { LayoutModule } from '@angular/cdk/layout';
 
 import { NgxChartsModule } from '@swimlane/ngx-charts';
+
 
 @NgModule({
   declarations: [AppComponent],
@@ -31,12 +36,16 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
     MatInputModule,
     MatRadioModule,
     MatButtonModule,
+    MatCardModule,
+    MatDialogModule,
+    MatStepperModule,
+    LayoutModule,
     NgxChartsModule,
   ],
   providers: [
     {
       provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
-      useValue: { appearance: 'fill' },
+      useValue: { appearance: 'outline' },
     },
     { provide: MAT_RADIO_DEFAULT_OPTIONS, useValue: { color: 'primary' } },
   ],

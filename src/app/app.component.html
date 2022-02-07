@@ -1,137 +1,265 @@
 <main>
-  <h1>Was sparen Sie mit dem Ecoturbino®?</h1>
-  <form *ngIf="form" [formGroup]="form" (submit)="submit()">
-    <div class="vat-form-container">
-      <h2>Verwendung</h2>
+  <h1>Ecoturbino® Einsparrechner</h1>
 
-      <mat-radio-group formControlName="useVat">
-        <mat-radio-button [value]="true">Privat</mat-radio-button>
-        <mat-radio-button [value]="false">Gewerblich</mat-radio-button>
-      </mat-radio-group>
-
-      <p class="hint">({{ getPriceHint() }})</p>
-    </div>
-
-    <div class="main-forms">
-      <div class="form-container" formGroupName="startSituation">
-        <h2>Ausgangssituation</h2>
-        <p class="hint">Bitte das Formular vollständig ausfüllen</p>
-
-        <mat-form-field>
-          <mat-label>Anzahl Duschen</mat-label>
-          <input formControlName="showers" matInput type="number" />
-          <!-- <button *ngIf="value" matSuffix mat-icon-button aria-label="Clear" (click)="value=''">
-            <mat-icon>close</mat-icon>
-          </button> -->
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Auslastung</mat-label>
-          <span matSuffix>%</span>
-          <input formControlName="workload" matInput type="number" />
-        </mat-form-field>
-        <!-- TODO: Dynamic like with price, according to whether its private or a company (->Nutzungsfaktor) -->
-        <mat-form-field>
-          <mat-label>Personen/Dusche</mat-label>
-          <input formControlName="personsPerShower" matInput type="number" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Duschdauer</mat-label>
-          <span matSuffix>min</span>
-          <input formControlName="showerDuration" matInput type="number" />
-        </mat-form-field>
-        <mat-form-field>
-          <span matSuffix>%</span>
-          <mat-label>tägliche Nutzung</mat-label>
-          <input formControlName="dailyUsagePerPerson" matInput type="number" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Wasserdurchfluss</mat-label>
-          <input formControlName="waterFlow" matInput type="number" />
-        </mat-form-field>
-      </div>
-
-      <div class="form-container" formGroupName="costs">
-        <h2>Kosten</h2>
-
-        <mat-form-field>
-          <mat-label>Heizmittel</mat-label>
-          <mat-select formControlName="heatingMeans">
-            <mat-option *ngFor="let option of heatingOptions" [value]="option">
-              {{ option.displayName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Stückpreis Ecoturbino</mat-label>
-          <input formControlName="unitPrice" matInput type="number" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Kaltwasserpreis</mat-label>
-          <input formControlName="coldwaterPrice" matInput type="number" />
-        </mat-form-field>
-        <!-- TODO: Dynamic Price field -->
-        <mat-form-field>
-          <mat-label>Preis</mat-label>
-          <input formControlName="price" matInput type="number" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Abwasserpreis</mat-label>
-          <input formControlName="wasteWaterPrice" matInput type="number" />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Zusatzkosten</mat-label>
-          <input formControlName="additionalCosts" matInput type="number" />
-        </mat-form-field>
-      </div>
-    </div>
-
-    <!-- TODO: Change order on smaller screensizes, so the optional form-field and the buttons are always last -->
-    <div class="optional-form-container" formGroupName="optional">
-      <h2>Optionale Angaben</h2>
-
-      <div class="optional-form">
-        <mat-form-field class="project-name-input">
-          <mat-label>Projektname</mat-label>
-          <input formControlName="projectName" matInput />
-        </mat-form-field>
-        <mat-form-field class="email-input">
-          <mat-label>E-Mail-Adresse</mat-label>
-          <input
-            type="email"
-            matInput
-            formControlName="email"
-            placeholder="max@example.com"
-          />
-          <mat-error *ngIf="email?.invalid && email?.touched">
-            Bitte geben Sie eine gültige E-Mail Adresse ein
-          </mat-error>
-        </mat-form-field>
-      </div>
-
-      <div class="button-group">
-        <button mat-raised-button color="primary" type="submit">
-          PDF Download
-        </button>
-        <button mat-raised-button color="primary" type="submit">
-          PDF-Versand per Mail
-        </button>
-      </div>
-    </div>
-  </form>
-
-  <!-- TODO: Fix color scheme [scheme]="", make bars smaller? -->
-  <div class="chart-container">
-    <ngx-charts-bar-vertical-2d
-      [results]="chartData"
-      [gradient]="false"
-      [xAxis]="true"
-      [yAxis]="true"
-      [legend]="true"
-      [showXAxisLabel]="false"
-      [showYAxisLabel]="false"
-      [animations]="true"
-      (select)="onSelect($event)"
+  <mat-stepper
+    #stepper
+    linear="true"
+    class="stepper"
+    [orientation]="(stepperOrientation | async)!"
+  >
+    <mat-step
+      [stepControl]="usageTypeFormGroup"
+      label="Gebrauchsart des Ecoturbinos"
     >
-    </ngx-charts-bar-vertical-2d>
-  </div>
+      <section>
+        <form
+          class="grid grid-usage-type-form"
+          [formGroup]="usageTypeFormGroup"
+        >
+          <mat-radio-group formControlName="usageType">
+            <mat-radio-button [value]="UsageTypeEnum.PRIVATE"
+              >Privat</mat-radio-button
+            >
+            <mat-radio-button [value]="UsageTypeEnum.BUSINESS"
+              >Gewerblich</mat-radio-button
+            >
+          </mat-radio-group>
+
+          <ng-container [ngSwitch]="usageType">
+            <p class="hint" *ngSwitchCase="UsageTypeEnum.PRIVATE">
+              (Alle Preise inkl. Mwst.)
+            </p>
+            <p class="hint" *ngSwitchCase="UsageTypeEnum.BUSINESS">
+              (Alle Preise exkl. Mwst.)
+            </p>
+          </ng-container>
+        </form>
+        <span class="actions">
+          <!-- <div class="spacer"></div> -->
+          <button mat-button matStepperNext>Weiter</button>
+        </span>
+      </section>
+    </mat-step>
+    <mat-step [stepControl]="usageFormGroup" label="Verbrauch">
+      <section>
+        <form class="grid grid-form" [formGroup]="usageFormGroup">
+          <mat-form-field>
+            <mat-label>Anzahl Duschen</mat-label>
+            <input type="number" matInput formControlName="showers" required />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Duschdauer</mat-label>
+            <span matSuffix>min</span>
+            <input
+              type="number"
+              matInput
+              formControlName="showerDuration"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Personen pro Dusche</mat-label>
+            <input
+              type="number"
+              matInput
+              formControlName="showerDuration"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Nutzungsfaktor</mat-label>
+            <mat-select formControlName="usageFactor">
+              <mat-option
+                *ngFor="let option of usageFactorOptions"
+                [value]="option"
+              >
+                {{ option.name }} ({{ option.factor | number: "1.1-1" }})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Wasserdurchfluss</mat-label>
+            <span matSuffix>l/min</span>
+            <input
+              type="number"
+              matInput
+              formControlName="waterflow"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Auslastung</mat-label>
+            <span matSuffix>%</span>
+            <input
+              type="number"
+              matInput
+              formControlName="workload"
+              min="0"
+              max="100"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Ecoturbino®-Typ</mat-label>
+            <mat-select formControlName="ecoturbinoType">
+              <mat-option *ngFor="let type of ecoturbinoTypes" [value]="type">
+                {{ type.name }} ({{ type.economyPercentage | percent }})
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </form>
+        <span class="actions">
+          <button mat-button matStepperPrevious>Zurück</button>
+          <button mat-button matStepperNext>Weiter</button>
+        </span>
+      </section>
+    </mat-step>
+    <mat-step [stepControl]="costsFormGroup" label="Kosten">
+      <section>
+        <form class="grid grid-form" [formGroup]="costsFormGroup">
+          <mat-form-field>
+            <mat-label>Heizmittel</mat-label>
+            <mat-select formControlName="heatingMeans">
+              <mat-option
+                *ngFor="let option of heatingOptions"
+                [value]="option"
+              >
+                {{ option.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Preis</mat-label>
+            <span matSuffix>€</span>
+            <input
+              type="number"
+              matInput
+              formControlName="heatingPrice"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Stückpreis Ecoturbino</mat-label>
+            <span matSuffix>€</span>
+            <input
+              type="number"
+              matInput
+              formControlName="unitPrice"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Kaltwasserpreis</mat-label>
+            <span matSuffix>€/m³</span>
+            <input
+              type="number"
+              matInput
+              formControlName="coldwaterPrice"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Abwasserpreis</mat-label>
+            <span matSuffix>€/m³</span>
+            <input
+              type="number"
+              matInput
+              formControlName="wastewaterPrice"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Zusatzkosten (optional)</mat-label>
+            <span matSuffix>€/m³</span>
+            <input
+              type="number"
+              matInput
+              formControlName="additionalCosts"
+              min="0"
+              required
+            />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>CO₂-Kosten (optional)</mat-label>
+            <span matSuffix>€/t</span>
+            <input
+              type="number"
+              matInput
+              formControlName="co2Costs"
+              min="0"
+              required
+            />
+          </mat-form-field>
+        </form>
+        <span class="actions">
+          <button mat-button matStepperPrevious>Zurück</button>
+          <button mat-button matStepperNext>Weiter</button>
+        </span>
+      </section>
+    </mat-step>
+    <mat-step label="Ergebnis" [stepControl]="resultFormGroup">
+      <section class="grid result">
+        <article>
+          <h3>
+            Einmalige Anschaffungskosten:
+            <span class="highlight"
+              >{{ acquisitionCosts() | number: "1.2-2" }} €</span
+            >
+          </h3>
+          <h3>
+            Sie sparen sich: <span class="highlight">{{ moneySavedPerAnno() }} pro Jahr</span>
+          </h3>
+          <h3>
+            Der Ecoturbino® amortisiert sich in Ihren Fall binnen
+            <span class="highlight">{{ amortizationPeriod() }} Monaten</span>
+          </h3>
+          <h4>Weitere jährliche Einsparungen:</h4>
+          <p>{{ waterSaved() }} m³ Wasser</p>
+          <p>{{ kwhSaved() }} kWh = {{ gjSaved() }} GJ Energie</p>
+          <p>
+            {{ tonsCo2Saved() }} t CO₂ (entspricht
+            {{ moneyCo2Saved() | number: "1.2-2" }} €)
+          </p>
+        </article>
+        <section>
+          <ngx-charts-bar-vertical-stacked
+            [results]="chartData"
+            [scheme]="colorScheme"
+            [gradient]="false"
+            [xAxis]="true"
+            [yAxis]="true"
+            [legend]="true"
+            [showXAxisLabel]="false"
+            [showYAxisLabel]="false"
+            [animations]="true"
+            (select)="onSelect($event)"
+          >
+          </ngx-charts-bar-vertical-stacked>
+        </section>
+        <form class="grid grid-form" [formGroup]="resultFormGroup">
+          <mat-form-field>
+            <mat-label>Projekt</mat-label>
+            <input type="text" matInput formControlName="project" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>E-Mail</mat-label>
+            <input type="email" matInput formControlName="email" />
+          </mat-form-field>
+        </form>
+        <span class="action">
+          <button mat-button matStepperPrevious>Zurück</button>
+          <button mat-raised-button (click)="(true)">Fertig</button>
+        </span>
+      </section>
+    </mat-step>
+  </mat-stepper>
+
+  <!-- <h3>here goes the chart</h3> -->
 </main>

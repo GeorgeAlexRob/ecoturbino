@@ -1,11 +1,31 @@
 import { Component, OnInit } from '@angular/core';
-import {
-  AbstractControl,
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { StepperOrientation } from '@angular/material/stepper';
+import { from, Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
+import { Color, ScaleType } from '@swimlane/ngx-charts';
+
+enum UsageTypeEnum {
+  PRIVATE,
+  BUSINESS,
+}
+
+interface UsageFactorOption {
+  name: string;
+  factor: number;
+}
+
+interface HeatingOption {
+  name: string;
+  price: number;
+  unit: string;
+}
+
+interface EcoturbinoOption {
+  name: string;
+  economyPercentage: number;
+}
 
 @Component({
   selector: 'app-root',
@@ -13,201 +33,271 @@ import {
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
-    chartData = [
-    {
-      "name": "Germany",
-      "series": [
-        {
-          "name": "2010",
-          "value": 40632,
-          "extra": {
-            "code": "de"
-          }
-        },
-        {
-          "name": "2000",
-          "value": 36953,
-          "extra": {
-            "code": "de"
-          }
-        },
-        {
-          "name": "1990",
-          "value": 31476,
-          "extra": {
-            "code": "de"
-          }
-        }
-      ]
-    },
-    {
-      "name": "United States",
-      "series": [
-        {
-          "name": "2010",
-          "value": 0,
-          "extra": {
-            "code": "us"
-          }
-        },
-        {
-          "name": "2000",
-          "value": 45986,
-          "extra": {
-            "code": "us"
-          }
-        },
-        {
-          "name": "1990",
-          "value": 37060,
-          "extra": {
-            "code": "us"
-          }
-        }
-      ]
-    },
-    {
-      "name": "France",
-      "series": [
-        {
-          "name": "2010",
-          "value": 36745,
-          "extra": {
-            "code": "fr"
-          }
-        },
-        {
-          "name": "2000",
-          "value": 34774,
-          "extra": {
-            "code": "fr"
-          }
-        },
-        {
-          "name": "1990",
-          "value": 29476,
-          "extra": {
-            "code": "fr"
-          }
-        }
-      ]
-    },
-    {
-      "name": "United Kingdom",
-      "series": [
-        {
-          "name": "2010",
-          "value": 36240,
-          "extra": {
-            "code": "uk"
-          }
-        },
-        {
-          "name": "2000",
-          "value": 32543,
-          "extra": {
-            "code": "uk"
-          }
-        },
-        {
-          "name": "1990",
-          "value": 26424,
-          "extra": {
-            "code": "uk"
-          }
-        }
-      ]
-    }
-  ]
-  //TODO: BIG ONE - i18n localization, also, what about the pdf?
-  form: FormGroup | undefined;
+  UsageTypeEnum: typeof UsageTypeEnum = UsageTypeEnum;
 
-  heatingOptions = [{displayName: 'Gas', value: 'gas'}, {displayName: 'Strom', value: 'electricity'}, {displayName: 'Fernwärme', value: 'districtHeating'}, {displayName: 'Pellets', value: 'pellets'}, {displayName: 'Öl', value: 'oil'}];
-  
-  privateDefault = {
-    useVat: true,
-    startSituation: this.fb.group({
-      showers: 1,
-      workload: 90, // 1 - 100% // TODO: Limit this
-      personsPerShower: 1,
-      showerDuration: 7, // Minutes
-      // This is different for business clients
-      dailyUsagePerPerson: 1,
-      waterFlow: 12, // l/min
-    }),
-    costs: this.fb.group({
-      heatingMeans: this.heatingOptions[0],
-      unitPrice: 56.7, // €   // TODO: Find out formatting for money amounts (with ',' and '.' -> Localizations?)
-      coldwaterPrice: 1.93, // €/m³
-      // Can always only be one of those at a time, according to 'heatingMeans'
-      gasPrice: 5.796, // c/kWh  // TODO: Make price dynamic according to heatingMeans
-      electricityPrice: 1,
-      price: 0,
-      // ---------------------------------
-      wasteWaterPrice: 2.11, // €/m³
-      additionalCosts: 0, // €/m³
-    }),
-    optional: this.fb.group({
-      projectName: [''],
-      email: ['', [Validators.email]],
-    }),
+  private usageTypeForm = {
+    usageType: [UsageTypeEnum.PRIVATE, Validators.required],
   };
+  usageTypeFormGroup = this._formBuilder.group(this.usageTypeForm);
 
-  businessDefault = {
-    useVat: false,
-    startSituation: this.fb.group({
-      showers: 1,
-      workload: [90, [
-        Validators.min(1),
-        Validators.max(100)
-      ]], // 1 - 100% // TODO: Limit this
-      personsPerShower: 1,
-      showerDuration: 7, // Minutes
-      usageFactor:  1, 
-      waterFlow: 12, // l/min
-    }),
-    costs: this.fb.group({
-      heatingMeans: 'Gas',
-      unitPrice: 56.7, // €   // TODO: Find out formatting for money amounts (with ',' and '.' -> Localizations?)
-      coldwaterPrice: 1.93, // €/m³
-      price: 5.796, // E.g.: c/kWh  // TODO: Make price dynamic according to heatingMeans
-      wasteWaterPrice: 2.11, // €/m³
-      additionalCosts: 0, // €/m³
-    }),
-    optional: this.fb.group({
-      projectName: [''],
-      email: ['', [Validators.email]],
-    }),
+  public get usageType(): UsageTypeEnum {
+    return this.usageTypeFormGroup.get('usageType')?.value;
   }
 
-  
-  public get email(): any {
-    return this.form?.get('email');
+  usageFactorOptions: UsageFactorOption[] = [
+    { name: 'Standard', factor: 1.0 },
+    { name: 'Sporthotel', factor: 1.2 },
+    { name: 'Wellnesshotel', factor: 1.2 },
+    { name: 'Businesshotel', factor: 1.5 },
+    { name: 'Kurhotel', factor: 1.5 },
+    { name: 'Industriebetrieb', factor: 1.5 },
+  ];
+
+  ecoturbinoTypes: EcoturbinoOption[] = [
+    { name: 'WR9', economyPercentage: 0.3 },
+    { name: 'WR10', economyPercentage: 0.4 },
+    { name: 'WR11', economyPercentage: 0.5 },
+  ];
+
+  private usageForm = {
+    showers: [1, Validators.required],
+    showerDuration: [7, Validators.required],
+    // dailyUsagePerPerson: [1, Validators.required],
+    usageFactor: this.usageFactorOptions[0],
+    waterflow: [12, Validators.required],
+    workload: [90, Validators.required],
+    ecoturbinoType: [this.ecoturbinoTypes[0], [Validators.required]],
+  };
+  usageFormGroup = this._formBuilder.group(this.usageForm);
+
+  public get showers(): number {
+    return this.usageFormGroup.get('showers')?.value;
   }
-  
 
+  public get workload(): number {
+    return this.usageFormGroup.get('workload')?.value;
+  }
 
+  public get showerDuration(): number {
+    return this.usageFormGroup.get('showerDuration')?.value;
+  }
 
-  constructor(private fb: FormBuilder) {}
+  public get usageFactor(): number {
+    return (this.usageFormGroup.get('usageFactor')?.value as UsageFactorOption)
+      .factor;
+  }
+
+  public get waterflow(): number {
+    return this.usageFormGroup.get('waterflow')?.value;
+  }
+
+  // HeatingTypeEnum: typeof HeatingTypeEnum = HeatingTypeEnum;
+
+  heatingOptions: HeatingOption[] = [
+    {
+      // type: HeatingTypeEnum.GAS,
+      name: 'Gas',
+      price: 14.108,
+      unit: 'c/kWh',
+    }, // c/kWh
+    {
+      // type: HeatingTypeEnum.ELECTRICITY,
+      name: 'Strom',
+      price: 23.96,
+      unit: 'c/kWh',
+    }, // c/kWh
+    {
+      // type: HeatingTypeEnum.DISTRICTHEATING,
+      name: 'Fernwärme',
+      price: 6.279,
+      unit: '€/m³',
+    }, // €/m3
+    {
+      // type: HeatingTypeEnum.PELLETS,
+      name: 'Pellets',
+      price: 30,
+      unit: 'c/kg',
+    }, // c/kg
+    {
+      // type: HeatingTypeEnum.OIL,
+      name: 'Öl',
+      price: 95.3,
+      unit: 'c/l',
+    }, // c/l
+  ];
+
+  private costsForm = {
+    heatingMeans: [this.heatingOptions[0], Validators.required],
+    heatingPrice: [this.heatingOptions[0].price, Validators.required],
+    coldwaterPrice: [2.02, Validators.required], // €/m³
+    wastewaterPrice: [2.22, Validators.required], // €/m³
+    unitPrice: [47.88, Validators.required], // €
+    additionalCosts: 0, // €/m³
+    co2Costs: 36,
+  };
+  costsFormGroup = this._formBuilder.group(this.costsForm);
+
+  public get heatingMeans(): HeatingOption {
+    return this.costsFormGroup.get('heatingMeans')?.value;
+  }
+
+  public get heatingPrice(): number {
+    return this.costsFormGroup.get('heatingPrice')?.value;
+  }
+
+  public get coldwaterPrice(): number {
+    return this.costsFormGroup.get('coldwaterPrice')?.value;
+  }
+
+  public get wastewaterPrice(): number {
+    return this.costsFormGroup.get('wastewaterPrice')?.value;
+  }
+
+  public get unitPrice(): number {
+    return this.costsFormGroup.get('unitPrice')?.value;
+  }
+
+  private resultForm = {
+    project: '',
+    email: ['', [Validators.email]],
+  };
+  resultFormGroup = this._formBuilder.group(this.resultForm);
+
+  stepperOrientation: Observable<StepperOrientation>;
+
+  constructor(
+    private _formBuilder: FormBuilder,
+    breakpointObserver: BreakpointObserver
+  ) {
+    this.stepperOrientation = breakpointObserver
+      .observe('(min-width: 800px)')
+      .pipe(map(({ matches }) => (matches ? 'horizontal' : 'vertical')));
+  }
 
   ngOnInit(): void {
-    this.form = this.fb.group(this.privateDefault);
+    this.usageTypeFormGroup
+      .get('usageType')
+      ?.valueChanges.subscribe((next: UsageTypeEnum) =>
+        next === UsageTypeEnum.PRIVATE
+          ? this.addVatOnAllPrices()
+          : this.removeVatOnAllPrices()
+      );
 
-    this.form.valueChanges.subscribe((val) => {
-      console.log(val);
-    });
+    this.costsFormGroup
+      .get('heatingMeans')
+      ?.valueChanges.subscribe((next: HeatingOption) => {
+        console.log(next);
+
+        this.costsFormGroup
+          .get('heatingPrice')
+          ?.setValue(
+            this.usageType === UsageTypeEnum.BUSINESS
+              ? this.removeVat(next.price)
+              : next.price
+          );
+      });
   }
 
-  getPriceHint = (): string =>
-    this.form?.get('useVat')?.value
-      ? 'Alle Preise inkl. MwSt.'
-      : 'Alle Preise exkl. MwSt.';
+  // private initForms(): void {
+  //   this.usageTypeFormGroup = this._formBuilder.group(this.usageTypeForm);
+  //   this.usageFormGroup = this._formBuilder.group(this.usageForm);
+  //   this.costsFormGroup = this._formBuilder.group(this.costsForm);
+  //   this.resultFormGroup = this._formBuilder.group(this.resultForm);
+  // }
 
-  onSelect(event: any) {
-    console.log(event);
-  }
+  // private resetAllForms(): void {
+  //   this.usageTypeFormGroup.reset();
+  //   this.usageFormGroup.reset();
+  //   this.costsFormGroup.reset();
+  //   this.resultFormGroup.reset();
+  // }
 
-  submit() {
-    console.log(this.form?.controls);
+  private addVatOnAllPrices = (): void =>
+    ['heatingPrice', 'coldwaterPrice', 'wastewaterPrice', 'unitPrice'].forEach(
+      (formCtrlName) => {
+        const price = this.costsFormGroup.get(formCtrlName)?.value;
+        this.costsFormGroup.get(formCtrlName)?.setValue(this.addVat(price));
+      }
+    );
+
+  private removeVatOnAllPrices = (): void =>
+    ['heatingPrice', 'coldwaterPrice', 'wastewaterPrice', 'unitPrice'].forEach(
+      (formCtrlName) => {
+        const price = this.costsFormGroup.get(formCtrlName)?.value;
+        this.costsFormGroup.get(formCtrlName)?.setValue(this.removeVat(price));
+      }
+    );
+
+  private removeVat = (price: number, vat?: number): number =>
+    this.toCurrency((price / (100 + (vat || 20))) * 100);
+
+  private addVat = (price: number, vat?: number): number =>
+    this.toCurrency((price / 100) * (100 + (vat || 20)));
+
+  private toCurrency = (num: number, decimalPoints?: number): number =>
+    +(Math.round(num * 100) / 100).toFixed(decimalPoints || 2);
+
+  acquisitionCosts = (): number => this.unitPrice * this.showers;
+  moneySavedPerAnno = (): number => 0;
+  amortizationPeriod = (): number => 0;
+  waterSaved = (): number => 0;
+  kwhSaved = (): number => 0;
+  gjSaved = (): number => 0;
+  tonsCo2Saved = (): number => 0;
+  moneyCo2Saved = (): number => 0;
+
+  chartData = [
+    {
+      name: 'Jetzt',
+      series: [
+        {
+          name: 'Berechnete Kosten',
+          value: 310,
+        },
+      ],
+    },
+
+    {
+      name: 'Im 1. Jahr',
+      series: [
+        {
+          name: 'Berechnete Kosten',
+          value: 180,
+        },
+        {
+          name: 'Einmalige Anschaffungskosten',
+          value: this.acquisitionCosts(),
+        },
+        {
+          name: 'Zukünftiges Ersparnis',
+          value: 75,
+        },
+      ],
+    },
+
+    {
+      name: 'Darauffolgende Jahre',
+      series: [
+        {
+          name: 'Berechnete Kosten',
+          value: 180,
+        },
+        {
+          name: 'Zukünftiges Ersparnis',
+          value: 120,
+        },
+      ],
+    },
+  ];
+
+  colorScheme: Color = {
+    domain: ['#A40606', '#C7B42C', '#5AA454'],
+    name: 'colors',
+    selectable: false,
+    group: ScaleType.Linear,
+  };
+
+  onSelect(event: any): void {
+    return;
   }
 }
